@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Candy Blast Deluxe</title>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  padding: 18px 10px 30px;
+  font-family: Arial, sans-serif;
+  text-align: center;
+  color: white;
+  background: radial-gradient(circle at top, #ff8bd2, transparent 45%),
+              linear-gradient(145deg, #40128d, #8518c9 55%, #f12b91);
+}
+
+h1 {
+  font-size: 32px;
+  margin: 5px 0;
+  text-shadow: 0 4px 0 #59108c, 0 7px 12px #290044;
+}
+
+.subtitle { margin: 7px 0 18px; }
+
+.panel {
+  max-width: 420px;
+  margin: auto;
+  padding: 12px;
+  border: 1px solid #ffffff70;
+  border-radius: 20px;
+  background: #ffffff20;
+  box-shadow: 0 8px 25px #28004455;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.stat {
+  padding: 9px 4px;
+  border-radius: 12px;
+  background: #ffffff25;
+  border: 1px solid #ffffff45;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.stat span {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 20px;
+}
+
+.progress-box {
+  margin: 13px 0 5px;
+  height: 12px;
+  overflow: hidden;
+  background: #3c075e;
+  border-radius: 20px;
+}
+
+#progress {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #fff45e, #ff9d00);
+  transition: width .3s;
+}
+
+#board {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 4px;
+  width: 100%;
+  max-width: 420px;
+  margin: 14px auto;
+  padding: 7px;
+  border-radius: 18px;
+  background: #40066d;
+  box-shadow: 0 8px 20px #23003c70;
+}
+
+.candy {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 0;
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 2px solid #ffffffb0;
+  border-radius: 10px;
+  background: linear-gradient(145deg, white, #f2d9ff);
+  box-shadow: 0 3px 0 #bd8bd5;
+  font-size: clamp(19px, 6vw, 32px);
+  cursor: pointer;
+  transition: transform .12s;
+}
+
+.candy:active { transform: scale(.86); }
+
+.candy.selected {
+  border: 3px solid #fff000;
+  background: #fff6a3;
+  transform: scale(.90);
+  box-shadow: 0 0 12px #fff000;
+}
+
+.candy.special {
+  background: linear-gradient(145deg, #fff6a1, #ffb000);
+  box-shadow: 0 0 12px #ffe500;
+}
+
+.candy.rainbow {
+  background: linear-gradient(135deg, #ff7676, #ffd166,
+                              #8df18d, #74caff, #d69aff);
+}
+
+#message {
+  min-height: 40px;
+  margin: 12px 0 5px;
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 1.5;
+}
+
+.buttons {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.game-button {
+  border: 0;
+  border-radius: 24px;
+  padding: 12px 17px;
+  color: #541077;
+  background: linear-gradient(#fff68b, #ffce24);
+  box-shadow: 0 4px 0 #b77b00;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.secondary {
+  background: linear-gradient(#fff, #e6d6ff);
+  box-shadow: 0 4px 0 #9270b8;
+}
+
+.screen {
+  display: none;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 24px 15px;
+  border: 1px solid #ffffff80;
+  border-radius: 25px;
+  background: #ffffff20;
+  box-shadow: 0 10px 30px #28004455;
+}
+
+.screen.active { display: block; }
+
+#gameScreen { display: none; }
+#gameScreen.active { display: block; }
+
+.logo {
+  font-size: 65px;
+  margin: 12px 0;
+  animation: float 2s ease-in-out infinite;
+}
+
+@keyframes float {
+  50% { transform: translateY(-8px); }
+}
+
+.home-button {
+  display: block;
+  width: 90%;
+  max-width: 280px;
+  margin: 14px auto;
+  padding: 15px;
+  border: 0;
+  border-radius: 28px;
+  background: linear-gradient(#fff68b, #ffce24);
+  color: #541077;
+  font-size: 18px;
+  font-weight: bold;
+  box-shadow: 0 5px 0 #b77b00;
+}
+
+.small-text {
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+#overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: #1e0038dd;
+}
+
+#overlay.show { display: flex; }
+
+.popup {
+  width: 100%;
+  max-width: 330px;
+  padding: 25px 18px;
+  border: 2px solid #ffffffaa;
+  border-radius: 25px;
+  background: linear-gradient(145deg, #a33bf0, #f52a91);
+  box-shadow: 0 0 35px #ff8bd277;
+}
+
+.popup h2 { font-size: 28px; }
+
+.popup p { line-height: 1.6; }
+
+.hidden { display: none !important; }
+</style>
+</head>
+
+<body>
+
+<h1>🍬 Candy Blast 🍭</h1>
+<p class="subtitle">✨ Match • Blast • Win ✨</p>
+
+<!-- HOME SCREEN -->
+<section id="homeScreen" class="screen active">
+  <div class="logo">🍬💣🍭</div>
+  <h2>Welcome, Candy Master!</h2>
+  <p>Match delicious candies and unlock new levels!</p>
+
+  <div class="stats">
+    <div class="stat">❤️ LIVES<br><span id="homeLives">5</span></div>
+    <div class="stat">🏆 BEST SCORE<br><span id="homeBest">0</span></div>
+    <div class="stat">🔓 HIGHEST LEVEL<br><span id="homeLevel">1</span></div>
+  </div>
+
+  <button class="home-button" id="playButton">▶ PLAY GAME</button>
+  <button class="home-button" id="howButton">❓ HOW TO PLAY</button>
+  <button class="home-button" id="resetButton">🗑 RESET PROGRESS</button>
+
+  <p class="small-text">Your progress is saved in this browser.</p>
+</section>
+
+<!-- INSTRUCTIONS -->
+<section id="howScreen" class="screen">
+  <h2>🎮 How to Play</h2>
+  <p class="small-text">
+    🍬 Swap neighbouring candies to match three or more.<br><br>
+    ⭐ Earn 10 points for each candy cleared.<br><br>
+    💣 Match four or more to create special candies when possible.<br><br>
+    🌈 Swap rainbow candies to clear candies of another type.<br><br>
+    🎯 Reach the target score before you run out of moves.<br><br>
+    ❤️ You have five lives. Failing a level costs one life.
+  </p>
+  <button class="home-button" id="backButton">⬅ BACK</button>
+</section>
+
+<!-- GAME SCREEN -->
+<section id="gameScreen">
+  <div class="panel">
+    <div class="stats">
+      <div class="stat">⭐ SCORE<br><span id="score">0</span></div>
+      <div class="stat">🎯 TARGET<br><span id="target">300</span></div>
+      <div class="stat">🏆 LEVEL<br><span id="level">1</span></div>
+      <div class="stat">👣 MOVES<br><span id="moves">20</span></div>
+      <div class="stat">❤️ LIVES<br><span id="lives">5</span></div>
+      <div class="stat">🥇 BEST<br><span id="best">0</span></div>
+    </div>
+
+    <div class="progress-box">
+      <div id="progress"></div>
+    </div>
+
+    <div id="board"></div>
+    <p id="message">Swap neighbouring candies!</p>
+
+    <div class="buttons">
+      <button class="game-button" id="restartButton">🔄 Restart Level</button>
+      <button class="game-button secondary" id="soundButton">🔊 Sound ON</button>
+      <button class="game-button secondary" id="homeButton">🏠 Home</button>
+    </div>
+  </div>
+</section>
+
+<div id="overlay">
+  <div class="popup">
+    <h2 id="popupTitle">🎉 Level Complete!</h2>
+    <p id="popupText"></p>
+    <button class="game-button" id="continueButton">Continue 🚀</button>
+  </div>
+</div>
+
+<script>
+const SIZE = 8;
+const NORMAL = ["🍬", "🍭", "🍒", "🍇", "🍊", "🍓"];
+const BOMB = "💣";
+const RAINBOW = "🌈";
+const SAVE_KEY = "candyBlastProgressV1";
+
+let candies = [];
+let score = 0;
+let level = 1;
+let moves = 20;
+let lives = 5;
+let bestScore = 0;
+let highestLevel = 1;
+let selected = null;
+let busy = false;
+let gameOver = false;
+let soundOn = true;
+let audioContext = null;
+
+const board = document.getElementById("board");
+const message = document.getElementById("message");
+const overlay = document.getElementById("overlay");
+
+function loadProgress() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SAVE_KEY) || "{}");
+    lives = Number.isInteger(saved.lives) ? Math.max(0, Math.min(5, saved.lives)) : 5;
+    bestScore = Number.isFinite(saved.bestScore) ? Math.max(0, saved.bestScore) : 0;
+    highestLevel = Number.isInteger(saved.highestLevel) ? Math.max(1, saved.highestLevel) : 1;
+    level = highestLevel;
+  } catch (error) {
+    lives = 5;
+    bestScore = 0;
+    highestLevel = 1;
+    level = 1;
+  }
+  updateHome();
+}
+
+function saveProgress() {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({
+      lives: lives,
+      bestScore: bestScore,
+      highestLevel: highestLevel
+    }));
+  } catch (error) {
+    console.log("Saving progress unavailable in this preview.");
+  }
+  updateHome();
+}
+
+function updateHome() {
+  document.getElementById("homeLives").textContent = lives;
+  document.getElementById("homeBest").textContent = bestScore;
+  document.getElementById("homeLevel").textContent = highestLevel;
+}
+
+function showScreen(name) {
+  document.getElementById("homeScreen").classList.remove("active");
+  document.getElementById("howScreen").classList.remove("active");
+  document.getElementById("gameScreen").classList.remove("active");
+
+  if (name === "home") {
+    document.getElementById("homeScreen").classList.add("active");
+  } else if (name === "how") {
+    document.getElementById("howScreen").classList.add("active");
+  } else {
+    document.getElementById("gameScreen").classList.add("active");
+  }
+}
+
+function randomCandy() {
+  return NORMAL[Math.floor(Math.random() * NORMAL.length)];
+}
+
+function targetScore() {
+  return level * 300;
+}
+
+function playSound(frequency = 650) {
+  if (!soundOn) return;
+
+  try {
+    const Audio = window.AudioContext || window.webkitAudioContext;
+    if (!Audio) return;
+
+    audioContext = audioContext || new Audio();
+    if (audioContext.state === "suspended") audioContext.resume();
+
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(
+      frequency * 1.5, audioContext.currentTime + 0.14
+    );
+
+    gain.gain.setValueAtTime(0.12, audioContext.currentTime);
+    gain.gain.exponentialRampToValueAtTime(
+      0.001, audioContext.currentTime + 0.2
+    );
+
+    oscillator.connect(gain);
+    gain.connect(audioContext.destination);
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.2);
+  } catch (error) {
+    console.log("Sound unavailable");
+  }
+}
+
+function updateStats() {
+  document.getElementById("score").textContent = score;
+  document.getElementById("target").textContent = targetScore();
+  document.getElementById("level").textContent = level;
+  document.getElementById("moves").textContent = moves;
+  document.getElementById("lives").textContent = lives;
+  document.getElementById("best").textContent = bestScore;
+
+  const previousTarget = (level - 1) * 300;
+  const progress = Math.min(100, Math.max(
+    0, (score - previousTarget) / 300 * 100
+  ));
+
+  document.getElementById("progress").style.width = progress + "%";
+}
+
+function render() {
+  board.innerHTML = "";
+
+  candies.forEach((candy, index) => {
+    const button = document.createElement("button");
+    button.className = "candy";
+    button.textContent = candy;
+
+    if (selected === index) button.classList.add("selected");
+    if (candy === BOMB) button.classList.add("special");
+    if (candy === RAINBOW) button.classList.add("special", "rainbow");
+
+    button.onclick = () => chooseCandy(index);
+    board.appendChild(button);
+  });
+}
+
+function findMatches() {
+  const matched = new Set();
+
+  for (let row = 0; row < SIZE; row++) {
+    let col = 0;
+
+    while (col < SIZE) {
+      const start = row * SIZE + col;
+      let end = col + 1;
+
+      while (
+        end < SIZE &&
+        candies[row * SIZE + end] === candies[start] &&
+        NORMAL.includes(candies[start])
+      ) end++;
+
+      if (NORMAL.includes(candies[start]) && end - col >= 3) {
+        for (let c = col; c < end; c++) matched.add(row * SIZE + c);
+      }
+
+      col = end;
+    }
+  }
+
+  for (let col = 0; col < SIZE; col++) {
+    let row = 0;
+
+    while (row < SIZE) {
+      const start = row * SIZE + col;
+      let end = row + 1;
+
+      while (
+        end < SIZE &&
+        candies[end * SIZE + col] === candies[start] &&
+        NORMAL.includes(candies[start])
+      ) end++;
+
+      if (NORMAL.includes(candies[start]) && end - row >= 3) {
+        for (let r = row; r < end; r++) matched.add(r * SIZE + col);
+      }
+
+      row = end;
+    }
+  }
+
+  return matched;
+}
+
+function fallAndRefill() {
+  for (let col = 0; col < SIZE; col++) {
+    const remaining = [];
+
+    for (let row = SIZE - 1; row >= 0; row--) {
+      const value = candies[row * SIZE + col];
+      if (value !== null) remaining.push(value);
+    }
+
+    while (remaining.length < SIZE) remaining.push(randomCandy());
+
+    for (let row = SIZE - 1; row >= 0; row--) {
+      candies[row * SIZE + col] = remaining[SIZE - 1 - row];
+    }
+  }
+}
+
+function clearSet(indices) {
+  if (indices.size === 0) return;
+
+  indices.forEach(index => candies[index] = null);
+  score += indices.size * 10;
+
+  if (score > bestScore) {
+    bestScore = score;
+    saveProgress();
+  }
+
+  playSound(550 + Math.min(indices.size * 20, 500));
+  fallAndRefill();
+}
+
+function resolveMatches(anchor) {
+  let rounds = 0;
+
+  while (rounds < 20) {
+    const matches = findMatches();
+    if (matches.size === 0) break;
+
+    let special = null;
+
+    if (matches.size >= 5) special = RAINBOW;
+    else if (matches.size === 4) special = BOMB;
+
+    if (special && matches.has(anchor)) {
+      matches.delete(anchor);
+      candies[anchor] = special;
+    } else {
+      special = null;
+    }
+
+    clearSet(matches);
+    rounds++;
+  }
+}
+
+function activateSpecial(first, second) {
+  const a = candies[first];
+  const b = candies[second];
+
+  if (a === RAINBOW || b === RAINBOW) {
+    const other = a === RAINBOW ? b : a;
+    const clear = new Set();
+
+    candies.forEach((candy, index) => {
+      if (candy === other || candy === RAINBOW) clear.add(index);
+    });
+
+    clearSet(clear);
+    resolveMatches(second);
+    return true;
+  }
+
+  if (a === BOMB || b === BOMB) {
+    const bombIndex = a === BOMB ? first : second;
+    const row = Math.floor(bombIndex / SIZE);
+    const col = bombIndex % SIZE;
+    const clear = new Set();
+
+    for (let r = Math.max(0, row - 1); r <= Math.min(SIZE - 1, row + 1); r++) {
+      for (let c = Math.max(0, col - 1); c <= Math.min(SIZE - 1, col + 1); c++) {
+        clear.add(r * SIZE + c);
+      }
+    }
+
+    clearSet(clear);
+    playSound(180);
+    resolveMatches(second);
+    return true;
+  }
+
+  return false;
+}
+
+function areNeighbours(a, b) {
+  return Math.abs(Math.floor(a / SIZE) - Math.floor(b / SIZE)) +
+         Math.abs((a % SIZE) - (b % SIZE)) === 1;
+}
+
+function showPopup(title, text, buttonText) {
+  document.getElementById("popupTitle").textContent = title;
+  document.getElementById("popupText").textContent = text;
+  document.getElementById("continueButton").textContent = buttonText;
+  overlay.classList.add("show");
+}
+
+function finishLevel() {
+  gameOver = true;
+  highestLevel = Math.max(highestLevel, level + 1);
+  saveProgress();
+  playSound(900);
+
+  showPopup(
+    "🎉 Level Complete!",
+    "You completed level " + level + "! Great work!",
+    "Next Level 🚀"
+  );
+}
+
+function loseLife() {
+  lives = Math.max(0, lives - 1);
+  saveProgress();
+  gameOver = true;
+
+  if (lives > 0) {
+    showPopup(
+      "😢 Level Failed",
+      "You ran out of moves. You lost one life. Lives remaining: " + lives,
+      "Try Again"
+    );
+  } else {
+    showPopup(
+      "💔 Out of Lives",
+      "You've used all five lives. Start a new game to play again.",
+      "New Game"
+    );
+  }
+}
+
+function checkGameStatus() {
+  updateStats();
+
+  if (score >= targetScore()) {
+    finishLevel();
+    return true;
+  }
+
+  if (moves <= 0) {
+    loseLife();
+    return true;
+  }
+
+  return false;
+}
+
+function chooseCandy(index) {
+  if (busy || gameOver) return;
+
+  if (selected === null) {
+    selected = index;
+    render();
+    return;
+  }
+
+  if (selected === index) {
+    selected = null;
+    render();
+    return;
+  }
+
+  if (!areNeighbours(selected, index)) {
+    selected = index;
+    render();
+    return;
+  }
+
+  const first = selected;
+  const second = index;
+  selected = null;
+
+  [candies[first], candies[second]] = [candies[second], candies[first]];
+
+  if (
+    candies[first] === BOMB || candies[second] === BOMB ||
+    candies[first] === RAINBOW || candies[second] === RAINBOW
+  ) {
+    busy = true;
+    moves--;
+    activateSpecial(first, second);
+    render();
+    updateStats();
+    busy = false;
+
+    if (!checkGameStatus()) message.textContent = "💥 Special-candy blast!";
+    return;
+  }
+
+  if (findMatches().size === 0) {
+    [candies[first], candies[second]] = [candies[second], candies[first]];
+    message.textContent = "No match! Try another swap.";
+    render();
+    return;
+  }
+
+  busy = true;
+  moves--;
+  resolveMatches(second);
+  render();
+  updateStats();
+
+  if (!checkGameStatus()) message.textContent = "✨ Great match! Keep going!";
+
+  busy = false;
+}
+
+function createBoard() {
+  candies = [];
+
+  for (let row = 0; row < SIZE; row++) {
+    for (let col = 0; col < SIZE; col++) {
+      let candy;
+
+      do {
+        candy = randomCandy();
+      } while (
+        (col >= 2 &&
+          candies[row * SIZE + col - 1] === candy &&
+          candies[row * SIZE + col - 2] === candy) ||
+        (row >= 2 &&
+          candies[(row - 1) * SIZE + col] === candy &&
+          candies[(row - 2) * SIZE + col] === candy)
+      );
+
+      candies.push(candy);
+    }
+  }
+}
+
+function startLevel() {
+  score = 0;
+  moves = 20;
+  selected = null;
+  busy = false;
+  gameOver = false;
+  overlay.classList.remove("show");
+
+  createBoard();
+  showScreen("game");
+  message.textContent = "Match 3+ candies to reach your target!";
+  updateStats();
+  render();
+}
+
+function startNewGame() {
+  lives = 5;
+  level = 1;
+  highestLevel = Math.max(highestLevel, 1);
+  score = 0;
+  saveProgress();
+  startLevel();
+}
+
+document.getElementById("playButton").onclick = function() {
+  if (lives <= 0) {
+    showPopup("💔 No Lives Left", "Start a new game to get five lives.", "New Game");
+    return;
+  }
+
+  level = highestLevel;
+  startLevel();
+};
+
+document.getElementById("howButton").onclick = () => showScreen("how");
+document.getElementById("backButton").onclick = () => showScreen("home");
+
+document.getElementById("resetButton").onclick = function() {
+  if (confirm("Reset your saved progress and start over?")) {
+    try { localStorage.removeItem(SAVE_KEY); } catch (error) {}
+    lives = 5;
+    bestScore = 0;
+    highestLevel = 1;
+    level = 1;
+    updateHome();
+    alert("Progress reset!");
+  }
+};
+
+document.getElementById("restartButton").onclick = startLevel;
+
+document.getElementById("soundButton").onclick = function() {
+  soundOn = !soundOn;
+  this.textContent = soundOn ? "🔊 Sound ON" : "🔇 Sound OFF";
+  if (soundOn) playSound(700);
+};
+
+document.getElementById("homeButton").onclick = function() {
+  overlay.classList.remove("show");
+  gameOver = true;
+  saveProgress();
+  showScreen("home");
+};
+
+document.getElementById("continueButton").onclick = function() {
+  overlay.classList.remove("show");
+
+  if (score >= targetScore()) {
+    level++;
+    highestLevel = Math.max(highestLevel, level);
+    saveProgress();
+    startLevel();
+  } else if (lives > 0) {
+    startLevel();
+  } else {
+    startNewGame();
+  }
+};
+
+loadProgress();
+</script>
+
+</body>
+  </html>
