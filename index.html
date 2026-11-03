@@ -319,8 +319,7 @@ function updateHome() {
   document.getElementById("homeBest").textContent = bestScore;
   document.getElementById("homeLevel").textContent = highestLevel;
 }
-
-function showScreen(name) {
+  function showScreen(name) {
   document.getElementById("homeScreen").classList.remove("active");
   document.getElementById("howScreen").classList.remove("active");
   document.getElementById("levelsScreen").classList.remove("active");
@@ -533,8 +532,8 @@ function loseLife() {
   } else {
     showPopup("💔 Out of Lives", "You've used all five lives. Start a new game to play again.", "New Game");
   }
-}
-
+  }
+  
 function checkGameStatus() {
   updateStats();
   if (score >= targetScore()) { finishLevel(); return true; }
@@ -545,4 +544,153 @@ function checkGameStatus() {
 function chooseCandy(index) {
   if (busy || gameOver) return;
   if (selected === null) {
-    selected = i
+    selected = index; render(); return;
+  }
+  if (selected === index) {
+    selected = null; render(); return;
+  }
+  if (!areNeighbours(selected, index)) {
+    selected = index; render(); return;
+  }
+
+  const first = selected, second = index;
+  selected = null;
+  [candies[first], candies[second]] = [candies[second], candies[first]];
+
+  if ([BOMB, RAINBOW].includes(candies[first]) || [BOMB, RAINBOW].includes(candies[second])) {
+    busy = true;
+    moves--;
+    activateSpecial(first, second);
+    render(); updateStats(); busy = false;
+    if (!checkGameStatus()) message.textContent = "💥 Special-candy blast!";
+    return;
+  }
+
+  if (findMatches().size === 0) {
+    [candies[first], candies[second]] = [candies[second], candies[first]];
+    message.textContent = "No match! Try another swap.";
+    render(); tone(260, 0.09, "sine", 0.06);
+    return;
+  }
+
+  busy = true;
+  moves--;
+  resolveMatches(second);
+  render(); updateStats();
+  if (!checkGameStatus()) message.textContent = "✨ Great match! Keep going!";
+  busy = false;
+}
+
+function createBoard() {
+  candies = [];
+  for (let row = 0; row < SIZE; row++) {
+    for (let col = 0; col < SIZE; col++) {
+      let candy;
+      do {
+        candy = randomCandy();
+      } while (
+        (col >= 2 && candies[row * SIZE + col - 1] === candy && candies[row * SIZE + col - 2] === candy) ||
+        (row >= 2 && candies[(row - 1) * SIZE + col] === candy && candies[(row - 2) * SIZE + col] === candy)
+      );
+      candies.push(candy);
+    }
+  }
+}
+
+function startLevel() {
+  score = 0; moves = 20; selected = null; busy = false; gameOver = false;
+  overlay.classList.remove("show");
+  createBoard();
+  showScreen("game");
+  message.textContent = "Match 3+ candies to reach your target!";
+  updateStats(); render();
+}
+
+function startNewGame() {
+  lives = 5; level = 1; highestLevel = Math.max(highestLevel, 1); score = 0;
+  saveProgress(); startLevel();
+}
+
+document.getElementById("playButton").onclick = function() {
+  getAudioContext();
+  if (lives <= 0) {
+    showPopup("💔 No Lives Left", "Start a new game to get five lives.", "New Game");
+    return;
+  }
+  level = highestLevel;
+  startLevel();
+};
+document.getElementById("howButton").onclick = () => showScreen("how");
+document.getElementById("backButton").onclick = () => showScreen("home");
+document.getElementById("levelsButton").onclick = () => showScreen("levels");
+document.getElementById("levelsBackButton").onclick = () => showScreen("home");
+
+document.getElementById("resetButton").onclick = function() {
+  if (confirm("Reset your saved progress and start over?")) {
+    try { localStorage.removeItem(SAVE_KEY); } catch (error) {}
+    lives = 5; bestScore = 0; highestLevel = 1; level = 1;
+    updateHome(); alert("Progress reset!");
+  }
+};
+
+document.getElementById("restartButton").onclick = startLevel;
+
+document.getElementById("soundButton").onclick = function() {
+  soundOn = !soundOn;
+  updateAudioButtons();
+  if (soundOn) playSound(700);
+};
+
+document.getElementById("musicButton").onclick = function() {
+  musicOn = !musicOn;
+  updateAudioButtons();
+  if (musicOn && document.getElementById("gameScreen").classList.contains("active")) startMusic();
+  else stopMusic();
+};
+
+document.getElementById("homeButton").onclick = function() {
+  overlay.classList.remove("show");
+  gameOver = true;
+  saveProgress();
+  showScreen("home");
+};
+
+document.getElementById("continueButton").onclick = function() {
+  overlay.classList.remove("show");
+  if (score >= targetScore()) {
+    if (level >= 100) {
+      showScreen("home");
+      return;
+    }
+    level++;
+    highestLevel = Math.min(100, Math.max(highestLevel, level));
+    saveProgress();
+    startLevel();
+  } else if (lives > 0) {
+    startLevel();
+  } else {
+    startNewGame();
+  }
+};
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) stopMusic();
+  else if (musicOn && document.getElementById("gameScreen").classList.contains("active") && !gameOver) startMusic();
+});
+
+loadProgress();
+updateAudioButtons();
+</script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js")
+      .then(() => console.log("Candy Blast is ready!"))
+      .catch(error => console.log("Service Worker error:", error));
+  });
+}
+</script>
+</body>
+</html>
+  
