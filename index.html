@@ -75,6 +75,11 @@ h1 { font-size: 32px; margin: 5px 0; text-shadow: 0 4px 0 #59108c, 0 7px 12px #2
 .level-button { min-width:0; padding:12px 2px; border:1px solid #ffffff90; border-radius:12px; color:#541077; background:linear-gradient(#fff,#ead8ff); font-size:15px; font-weight:bold; box-shadow:0 3px 0 #9270b8; }
 .level-button.unlocked { background:linear-gradient(#fff68b,#ffce24); box-shadow:0 3px 0 #b77b00; }
 .level-button:disabled { opacity:.48; filter:grayscale(.7); }
+.reward-card { max-width:340px; margin:16px auto; padding:16px; border:1px solid #ffffff90; border-radius:18px; background:#ffffff20; line-height:1.7; }
+.reward-days { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:5px; margin:14px 0; }
+.reward-day { padding:9px 1px; border-radius:10px; color:#541077; background:#ffffffdd; font-size:12px; font-weight:bold; }
+.reward-day.today { background:linear-gradient(#fff68b,#ffce24); outline:2px solid white; }
+.reward-day.claimed { background:#9af0b0; }
 #overlay {
   display: none; position: fixed; inset: 0; z-index: 10; align-items: center;
   justify-content: center; padding: 20px; background: #1e0038dd;
@@ -102,9 +107,11 @@ h1 { font-size: 32px; margin: 5px 0; text-shadow: 0 4px 0 #59108c, 0 7px 12px #2
     <div class="stat">❤️ LIVES<br><span id="homeLives">5</span></div>
     <div class="stat">🏆 BEST SCORE<br><span id="homeBest">0</span></div>
     <div class="stat">🔓 HIGHEST LEVEL<br><span id="homeLevel">1</span></div>
+    <div class="stat">🪙 COINS<br><span id="homeCoins">0</span></div>
   </div>
   <button class="home-button" id="playButton">▶ PLAY GAME</button>
   <button class="home-button" id="levelsButton">🏆 SELECT LEVEL</button>
+  <button class="home-button" id="dailyRewardsButton">🎁 DAILY REWARDS</button>
   <button class="home-button" id="howButton">❓ HOW TO PLAY</button>
   <button class="home-button" id="resetButton">🗑 RESET PROGRESS</button>
   <p class="small-text">Your progress is saved in this browser.</p>
@@ -128,6 +135,20 @@ h1 { font-size: 32px; margin: 5px 0; text-shadow: 0 4px 0 #59108c, 0 7px 12px #2
   <p class="small-text">Unlocked levels: <strong id="unlockedCount">1</strong> / 100</p>
   <div id="levelGrid" class="level-grid"></div>
   <button class="home-button" id="levelsBackButton">⬅ BACK</button>
+</section>
+
+<section id="dailyRewardsScreen" class="screen">
+  <h2>🎁 Daily Rewards</h2>
+  <p class="small-text">Come back every day to build your streak and collect rewards!</p>
+  <div class="reward-card">
+    <h3 id="rewardStreak">🔥 0-day streak</h3>
+    <p id="rewardStatus">Your reward is ready!</p>
+    <div class="reward-days" id="rewardDays"></div>
+    <p id="rewardToday">Today: 🪙 50 coins + ❤️ 1 life</p>
+    <button class="home-button" id="claimRewardButton">🎁 CLAIM TODAY'S REWARD</button>
+  </div>
+  <p class="small-text">Coins and your daily streak are saved on this device.</p>
+  <button class="home-button" id="dailyBackButton">⬅ BACK</button>
 </section>
 
 <section id="gameScreen">
@@ -171,6 +192,7 @@ let candies = [], score = 0, level = 1, moves = 20, lives = 5;
 let bestScore = 0, highestLevel = 1, selected = null;
 let busy = false, gameOver = false;
 let soundOn = true, musicOn = true;
+let coins = 0, dailyStreak = 0, lastRewardDate = "";
 let audioContext = null, musicTimer = null, musicNote = 0;
 
 const board = document.getElementById("board");
@@ -296,6 +318,9 @@ function loadProgress() {
     lives = Number.isInteger(saved.lives) ? Math.max(0, Math.min(5, saved.lives)) : 5;
     bestScore = Number.isFinite(saved.bestScore) ? Math.max(0, saved.bestScore) : 0;
     highestLevel = Number.isInteger(saved.highestLevel) ? Math.min(100, Math.max(1, saved.highestLevel)) : 1;
+    coins = Number.isInteger(saved.coins) ? Math.max(0, saved.coins) : 0;
+    dailyStreak = Number.isInteger(saved.dailyStreak) ? Math.max(0, Math.min(7, saved.dailyStreak)) : 0;
+    lastRewardDate = typeof saved.lastRewardDate === "string" ? saved.lastRewardDate : "";
     level = highestLevel;
   } catch (error) {
     lives = 5; bestScore = 0; highestLevel = 1; level = 1;
@@ -306,7 +331,8 @@ function loadProgress() {
 function saveProgress() {
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify({
-      lives: lives, bestScore: bestScore, highestLevel: highestLevel
+      lives: lives, bestScore: bestScore, highestLevel: highestLevel,
+    coins: coins, dailyStreak: dailyStreak, lastRewardDate: lastRewardDate
     }));
   } catch (error) {
     console.log("Saving progress unavailable in this preview.");
@@ -318,11 +344,14 @@ function updateHome() {
   document.getElementById("homeLives").textContent = lives;
   document.getElementById("homeBest").textContent = bestScore;
   document.getElementById("homeLevel").textContent = highestLevel;
+  document.getElementById("homeCoins").textContent = coins;
 }
-  function showScreen(name) {
+
+function showScreen(name) {
   document.getElementById("homeScreen").classList.remove("active");
   document.getElementById("howScreen").classList.remove("active");
   document.getElementById("levelsScreen").classList.remove("active");
+  document.getElementById("dailyRewardsScreen").classList.remove("active");
   document.getElementById("gameScreen").classList.remove("active");
   if (name === "home") {
     document.getElementById("homeScreen").classList.add("active");
@@ -334,6 +363,10 @@ function updateHome() {
     document.getElementById("levelsScreen").classList.add("active");
     stopMusic();
     renderLevelSelection();
+  } else if (name === "daily") {
+    document.getElementById("dailyRewardsScreen").classList.add("active");
+    stopMusic();
+    renderDailyRewards();
   } else {
     document.getElementById("gameScreen").classList.add("active");
     if (musicOn) startMusic();
@@ -363,6 +396,82 @@ function renderLevelSelection() {
     }
     grid.appendChild(button);
   }
+}
+
+
+function localDateKey(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return year + "-" + month + "-" + day;
+}
+
+function dateDifferenceInDays(olderKey, newerKey) {
+  if (!olderKey) return Infinity;
+  const older = new Date(olderKey + "T12:00:00");
+  const newer = new Date(newerKey + "T12:00:00");
+  return Math.round((newer - older) / 86400000);
+}
+
+function rewardForDay(day) {
+  const rewards = [
+    { coins: 50, lives: 1 },
+    { coins: 75, lives: 1 },
+    { coins: 100, lives: 1 },
+    { coins: 125, lives: 1 },
+    { coins: 150, lives: 1 },
+    { coins: 200, lives: 2 },
+    { coins: 300, lives: 2 }
+  ];
+  return rewards[(day - 1) % 7];
+}
+
+function renderDailyRewards() {
+  const today = localDateKey();
+  const claimedToday = lastRewardDate === today;
+  const nextDay = (dailyStreak % 7) + 1;
+  document.getElementById("rewardStreak").textContent = "🔥 " + dailyStreak + "-day streak";
+  document.getElementById("rewardStatus").textContent = claimedToday
+    ? "✅ Today's reward has already been collected. Come back tomorrow!"
+    : "🎉 Your daily reward is ready to claim!";
+  const reward = rewardForDay(nextDay);
+  document.getElementById("rewardToday").textContent =
+    "Today's reward: 🪙 " + reward.coins + " coins + ❤️ " + reward.lives +
+    " life" + (reward.lives === 1 ? "" : "s");
+  const days = document.getElementById("rewardDays");
+  days.innerHTML = "";
+  for (let day = 1; day <= 7; day++) {
+    const item = document.createElement("div");
+    item.className = "reward-day";
+    if (day === nextDay) item.classList.add("today");
+    if (claimedToday && day === dailyStreak) item.classList.add("claimed");
+    item.innerHTML = "Day " + day + "<br>🪙" + rewardForDay(day).coins;
+    days.appendChild(item);
+  }
+  const button = document.getElementById("claimRewardButton");
+  button.disabled = claimedToday;
+  button.style.opacity = claimedToday ? "0.55" : "1";
+  button.textContent = claimedToday ? "✅ REWARD CLAIMED" : "🎁 CLAIM TODAY'S REWARD";
+}
+
+function claimDailyReward() {
+  const today = localDateKey();
+  if (lastRewardDate === today) {
+    renderDailyRewards();
+    return;
+  }
+  const gap = dateDifferenceInDays(lastRewardDate, today);
+  dailyStreak = gap === 1 ? Math.min(7, dailyStreak + 1) : 1;
+  const reward = rewardForDay(dailyStreak);
+  coins += reward.coins;
+  lives = Math.min(5, lives + reward.lives);
+  lastRewardDate = today;
+  saveProgress();
+  renderDailyRewards();
+  document.getElementById("rewardStatus").textContent =
+    "🎉 Collected " + reward.coins + " coins and " + reward.lives +
+    " extra life" + (reward.lives === 1 ? "" : "s") + "!";
+  playSound(880);
 }
 
 function randomCandy() {
@@ -532,8 +641,8 @@ function loseLife() {
   } else {
     showPopup("💔 Out of Lives", "You've used all five lives. Start a new game to play again.", "New Game");
   }
-  }
-  
+}
+
 function checkGameStatus() {
   updateStats();
   if (score >= targetScore()) { finishLevel(); return true; }
@@ -624,11 +733,15 @@ document.getElementById("howButton").onclick = () => showScreen("how");
 document.getElementById("backButton").onclick = () => showScreen("home");
 document.getElementById("levelsButton").onclick = () => showScreen("levels");
 document.getElementById("levelsBackButton").onclick = () => showScreen("home");
+document.getElementById("dailyRewardsButton").onclick = () => showScreen("daily");
+document.getElementById("dailyBackButton").onclick = () => showScreen("home");
+document.getElementById("claimRewardButton").onclick = claimDailyReward;
 
 document.getElementById("resetButton").onclick = function() {
   if (confirm("Reset your saved progress and start over?")) {
     try { localStorage.removeItem(SAVE_KEY); } catch (error) {}
     lives = 5; bestScore = 0; highestLevel = 1; level = 1;
+    coins = 0; dailyStreak = 0; lastRewardDate = "";
     updateHome(); alert("Progress reset!");
   }
 };
@@ -693,4 +806,3 @@ if ("serviceWorker" in navigator) {
 </script>
 </body>
 </html>
-  
