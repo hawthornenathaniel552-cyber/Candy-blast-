@@ -821,13 +821,15 @@ document.getElementById("continueButton").onclick = function() {
 loadProgress();
 </script>
 
-</body><script>
+<script>
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./service-worker.js")
       .then(() => console.log("Candy Blast is ready!"))
-      .catch(error => console.log(error));
+      .catch(error => console.log("Service Worker error:", error));
   });
 }
 </script>
-  </html>
+
+</body>
+</html>
