@@ -9,5 +9,18 @@
   "start_url": "/",
   "theme_color": "#8e24aa",
   "id": "/candy-blast-app/",
-  "description": "Match colorful candies, earn points, and unlock exciting levels in Candy Blast!"
-}
+  "description": "Match colorful candies, earn points, and unlock exciting levels in Candy Blast!",
+  "icons": [
+  {
+    "src": "./icon-192.png",
+    "sizes": "192x192",
+    "type": "image/png",
+    "purpose": "any"
+  },
+  {
+    "src": "./icon-512.png",
+    "sizes": "512x512",
+    "type": "image/png",
+    "purpose": "any"
+  }
+  ]
