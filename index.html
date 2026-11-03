@@ -80,6 +80,9 @@ h1 { font-size: 32px; margin: 5px 0; text-shadow: 0 4px 0 #59108c, 0 7px 12px #2
 .reward-day { padding:9px 1px; border-radius:10px; color:#541077; background:#ffffffdd; font-size:12px; font-weight:bold; }
 .reward-day.today { background:linear-gradient(#fff68b,#ffce24); outline:2px solid white; }
 .reward-day.claimed { background:#9af0b0; }
+.shop-item { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:10px 0; padding:12px; border-radius:14px; background:#ffffff25; text-align:left; }
+.shop-item small { display:block; opacity:.9; margin-top:4px; }
+.shop-buy { flex-shrink:0; border:0; border-radius:18px; padding:10px 12px; font-weight:bold; color:#541077; background:linear-gradient(#fff68b,#ffce24); }
 #overlay {
   display: none; position: fixed; inset: 0; z-index: 10; align-items: center;
   justify-content: center; padding: 20px; background: #1e0038dd;
@@ -98,7 +101,6 @@ h1 { font-size: 32px; margin: 5px 0; text-shadow: 0 4px 0 #59108c, 0 7px 12px #2
 <body>
 <h1>🍬 Candy Blast 🍭</h1>
 <p class="subtitle">✨ Match • Blast • Win ✨</p>
-
 <section id="homeScreen" class="screen active">
   <div class="logo">🍬💣🍭</div>
   <h2>Welcome, Candy Master!</h2>
@@ -112,6 +114,7 @@ h1 { font-size: 32px; margin: 5px 0; text-shadow: 0 4px 0 #59108c, 0 7px 12px #2
   <button class="home-button" id="playButton">▶ PLAY GAME</button>
   <button class="home-button" id="levelsButton">🏆 SELECT LEVEL</button>
   <button class="home-button" id="dailyRewardsButton">🎁 DAILY REWARDS</button>
+  <button class="home-button" id="shopButton">🪙 COIN SHOP</button>
   <button class="home-button" id="howButton">❓ HOW TO PLAY</button>
   <button class="home-button" id="resetButton">🗑 RESET PROGRESS</button>
   <p class="small-text">Your progress is saved in this browser.</p>
@@ -149,6 +152,21 @@ h1 { font-size: 32px; margin: 5px 0; text-shadow: 0 4px 0 #59108c, 0 7px 12px #2
   </div>
   <p class="small-text">Coins and your daily streak are saved on this device.</p>
   <button class="home-button" id="dailyBackButton">⬅ BACK</button>
+</section>
+
+<section id="shopScreen" class="screen">
+  <h2>🪙 Candy Shop</h2>
+  <p class="small-text">Spend your coins on helpful items. Boosters are saved until your next level starts.</p>
+  <div class="reward-card">
+    <h3>🪙 Your coins: <span id="shopCoins">0</span></h3>
+    <div class="shop-item"><div>❤️ 1 Extra Life<small>Restore one life (maximum 5)</small></div><button class="shop-buy" data-buy="life">100 🪙</button></div>
+    <div class="shop-item"><div>👣 +5 Moves<small>Use on your next level</small></div><button class="shop-buy" data-buy="moves">150 🪙</button></div>
+    <div class="shop-item"><div>💣 Candy Bomb<small>Place a bomb in your next level</small></div><button class="shop-buy" data-buy="bomb">200 🪙</button></div>
+    <div class="shop-item"><div>🌈 Rainbow Booster<small>Place a rainbow candy in your next level</small></div><button class="shop-buy" data-buy="rainbow">300 🪙</button></div>
+    <div class="shop-item"><div>🎁 3 Extra Lives<small>Restore up to three lives (maximum 5)</small></div><button class="shop-buy" data-buy="lives3">250 🪙</button></div>
+    <p id="shopMessage" class="small-text">Choose an item to purchase.</p>
+  </div>
+  <button class="home-button" id="shopBackButton">⬅ BACK</button>
 </section>
 
 <section id="gameScreen">
@@ -193,6 +211,7 @@ let bestScore = 0, highestLevel = 1, selected = null;
 let busy = false, gameOver = false;
 let soundOn = true, musicOn = true;
 let coins = 0, dailyStreak = 0, lastRewardDate = "";
+let inventory = { extraMoves: 0, bombs: 0, rainbows: 0 };
 let audioContext = null, musicTimer = null, musicNote = 0;
 
 const board = document.getElementById("board");
@@ -321,18 +340,23 @@ function loadProgress() {
     coins = Number.isInteger(saved.coins) ? Math.max(0, saved.coins) : 0;
     dailyStreak = Number.isInteger(saved.dailyStreak) ? Math.max(0, Math.min(7, saved.dailyStreak)) : 0;
     lastRewardDate = typeof saved.lastRewardDate === "string" ? saved.lastRewardDate : "";
+    inventory = saved.inventory && typeof saved.inventory === "object" ? {
+      extraMoves: Math.max(0, Number(saved.inventory.extraMoves) || 0),
+      bombs: Math.max(0, Number(saved.inventory.bombs) || 0),
+      rainbows: Math.max(0, Number(saved.inventory.rainbows) || 0)
+    } : { extraMoves: 0, bombs: 0, rainbows: 0 };
     level = highestLevel;
   } catch (error) {
     lives = 5; bestScore = 0; highestLevel = 1; level = 1;
   }
   updateHome();
 }
-
-function saveProgress() {
+  function saveProgress() {
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       lives: lives, bestScore: bestScore, highestLevel: highestLevel,
-    coins: coins, dailyStreak: dailyStreak, lastRewardDate: lastRewardDate
+    coins: coins, dailyStreak: dailyStreak, lastRewardDate: lastRewardDate,
+    inventory: inventory
     }));
   } catch (error) {
     console.log("Saving progress unavailable in this preview.");
@@ -352,6 +376,7 @@ function showScreen(name) {
   document.getElementById("howScreen").classList.remove("active");
   document.getElementById("levelsScreen").classList.remove("active");
   document.getElementById("dailyRewardsScreen").classList.remove("active");
+  document.getElementById("shopScreen").classList.remove("active");
   document.getElementById("gameScreen").classList.remove("active");
   if (name === "home") {
     document.getElementById("homeScreen").classList.add("active");
@@ -363,6 +388,10 @@ function showScreen(name) {
     document.getElementById("levelsScreen").classList.add("active");
     stopMusic();
     renderLevelSelection();
+  } else if (name === "shop") {
+    document.getElementById("shopScreen").classList.add("active");
+    stopMusic();
+    renderShop();
   } else if (name === "daily") {
     document.getElementById("dailyRewardsScreen").classList.add("active");
     stopMusic();
@@ -503,8 +532,8 @@ function render() {
     button.onclick = () => chooseCandy(index);
     board.appendChild(button);
   });
-}
-
+  }
+  
 function findMatches() {
   const matched = new Set();
   for (let row = 0; row < SIZE; row++) {
@@ -707,12 +736,60 @@ function createBoard() {
 }
 
 function startLevel() {
-  score = 0; moves = 20; selected = null; busy = false; gameOver = false;
+  score = 0; moves = 20 + (inventory.extraMoves * 5); selected = null; busy = false; gameOver = false;
   overlay.classList.remove("show");
   createBoard();
+  if (inventory.bombs > 0) {
+    const spot = Math.floor(Math.random() * candies.length);
+    candies[spot] = BOMB;
+    inventory.bombs--;
+  }
+  if (inventory.rainbows > 0) {
+    let spot = Math.floor(Math.random() * candies.length);
+    if (candies[spot] === BOMB) spot = (spot + 1) % candies.length;
+    candies[spot] = RAINBOW;
+    inventory.rainbows--;
+  }
+  inventory.extraMoves = 0;
+  saveProgress();
   showScreen("game");
   message.textContent = "Match 3+ candies to reach your target!";
   updateStats(); render();
+}
+
+
+function renderShop() {
+  document.getElementById("shopCoins").textContent = coins;
+  document.getElementById("shopMessage").textContent =
+    "Inventory: +5 moves " + inventory.extraMoves + " | 💣 " + inventory.bombs + " | 🌈 " + inventory.rainbows;
+}
+
+function buyShopItem(item) {
+  const prices = { life: 100, moves: 150, bomb: 200, rainbow: 300, lives3: 250 };
+  const price = prices[item];
+  if (!price) return;
+  if (coins < price) {
+    document.getElementById("shopMessage").textContent = "Not enough coins. Collect daily rewards to earn more!";
+    return;
+  }
+  if (item === "life" && lives >= 5) {
+    document.getElementById("shopMessage").textContent = "You already have the maximum 5 lives.";
+    return;
+  }
+  if (item === "lives3" && lives >= 5) {
+    document.getElementById("shopMessage").textContent = "You already have the maximum 5 lives.";
+    return;
+  }
+  coins -= price;
+  if (item === "life") lives = Math.min(5, lives + 1);
+  if (item === "lives3") lives = Math.min(5, lives + 3);
+  if (item === "moves") inventory.extraMoves++;
+  if (item === "bomb") inventory.bombs++;
+  if (item === "rainbow") inventory.rainbows++;
+  saveProgress();
+  renderShop();
+  document.getElementById("shopMessage").textContent = "Purchase successful! Your item has been saved.";
+  playSound(784);
 }
 
 function startNewGame() {
@@ -736,12 +813,18 @@ document.getElementById("levelsBackButton").onclick = () => showScreen("home");
 document.getElementById("dailyRewardsButton").onclick = () => showScreen("daily");
 document.getElementById("dailyBackButton").onclick = () => showScreen("home");
 document.getElementById("claimRewardButton").onclick = claimDailyReward;
+document.getElementById("shopButton").onclick = () => showScreen("shop");
+document.getElementById("shopBackButton").onclick = () => showScreen("home");
+document.querySelectorAll("[data-buy]").forEach(button => {
+  button.addEventListener("click", () => buyShopItem(button.dataset.buy));
+});
 
 document.getElementById("resetButton").onclick = function() {
   if (confirm("Reset your saved progress and start over?")) {
     try { localStorage.removeItem(SAVE_KEY); } catch (error) {}
     lives = 5; bestScore = 0; highestLevel = 1; level = 1;
     coins = 0; dailyStreak = 0; lastRewardDate = "";
+    inventory = { extraMoves: 0, bombs: 0, rainbows: 0 };
     updateHome(); alert("Progress reset!");
   }
 };
