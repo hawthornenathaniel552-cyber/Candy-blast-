@@ -101,14 +101,36 @@ h1 { font-size: 32px; margin: 5px 0; text-shadow: 0 4px 0 #59108c, 0 7px 12px #2
 .popup h2 { font-size: 28px; }
 .popup p { line-height: 1.6; }
 .hidden { display: none !important; }
+
+/* Deluxe visual polish */
+body{background:radial-gradient(circle at 12% 8%,#ffb8e8 0 5%,transparent 26%),radial-gradient(circle at 90% 20%,#8be9ff55 0 8%,transparent 28%),linear-gradient(145deg,#26064f,#6511a6 48%,#e51d83);background-attachment:fixed;}
+body:before{content:"✦  ✧  ·  ✦  ·  ✧  ✦";position:fixed;inset:8px 0 auto;pointer-events:none;opacity:.24;font-size:24px;letter-spacing:18px;z-index:-1;}
+.screen,.panel{backdrop-filter:blur(12px);background:linear-gradient(145deg,#ffffff30,#ffffff12);border:1px solid #ffffff80;box-shadow:0 14px 38px #17002d66,inset 0 1px 0 #ffffff55;}
+.home-button,.game-button,.shop-buy{transition:transform .15s,filter .15s;}
+.home-button:active,.game-button:active,.shop-buy:active{transform:translateY(3px) scale(.98);filter:brightness(1.08);}
+.logo{filter:drop-shadow(0 8px 8px #27004488);}
+.candy{border-radius:14px;background:radial-gradient(circle at 32% 25%,#fff 0 8%,#ffffffaa 9% 13%,transparent 14%),linear-gradient(145deg,#fff,#e7caff);box-shadow:0 4px 0 #a96bc9,0 0 10px #ffffff55;}
+.candy:nth-child(3n){border-radius:50%;}
+.candy:nth-child(4n){transform:rotate(-3deg);}
+.candy.selected{transform:scale(.9) rotate(4deg);}
+.profile-avatar{font-size:54px;margin:8px auto;filter:drop-shadow(0 5px 5px #26004488);}
+.profile-field{width:90%;max-width:300px;padding:12px;border:1px solid #ffffffaa;border-radius:14px;font-size:16px;margin:8px auto;color:#42105f;background:#fff;}
+.leader-row{display:flex;justify-content:space-between;align-items:center;gap:8px;text-align:left;margin:8px 0;padding:12px;border-radius:14px;background:#ffffff25;border:1px solid #ffffff40;}
+.leader-row strong{color:#fff5a6;}
+.avatar-picks{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:10px;}
+.avatar-picks button{font-size:25px;border:2px solid transparent;border-radius:12px;background:#ffffff30;padding:7px;}
+.avatar-picks button.chosen{border-color:#fff000;background:#ffffff55;}
+  
 </style>
 </head>
 <body>
 <h1>🍬 Candy Blast 🍭</h1>
 <p class="subtitle">✨ Match • Blast • Win ✨</p>
+
 <section id="homeScreen" class="screen active">
   <div class="logo">🍬💣🍭</div>
-  <h2>Welcome, Candy Master!</h2>
+  <h2>Welcome, <span id="homePlayerName">Candy Master</span>!</h2>
+  <p class="small-text" id="homePlayerLine">Your candy adventure starts here.</p>
   <p>Match delicious candies and unlock new levels!</p>
   <div class="stats">
     <div class="stat">❤️ LIVES<br><span id="homeLives">5</span></div>
@@ -121,6 +143,8 @@ h1 { font-size: 32px; margin: 5px 0; text-shadow: 0 4px 0 #59108c, 0 7px 12px #2
   <button class="home-button" id="dailyRewardsButton">🎁 DAILY REWARDS</button>
   <button class="home-button" id="shopButton">🪙 COIN SHOP</button>
   <button class="home-button" id="spinButton">🎡 LUCKY SPIN</button>
+  <button class="home-button" id="profileButton">👤 PLAYER PROFILE</button>
+  <button class="home-button" id="leaderboardButton">🏆 LEADERBOARD</button>
   <button class="home-button" id="howButton">❓ HOW TO PLAY</button>
   <button class="home-button" id="resetButton">🗑 RESET PROGRESS</button>
   <p class="small-text">Your progress is saved in this browser.</p>
@@ -200,6 +224,27 @@ h1 { font-size: 32px; margin: 5px 0; text-shadow: 0 4px 0 #59108c, 0 7px 12px #2
   <button class="home-button" id="shopBackButton">⬅ BACK</button>
 </section>
 
+<section id="profileScreen" class="screen">
+  <h2>👤 Player Profile</h2>
+  <div class="profile-avatar" id="profileAvatarPreview">😎</div>
+  <input class="profile-field" id="playerNameInput" maxlength="18" placeholder="Enter your player name" aria-label="Player name">
+  <p class="small-text">Choose your avatar</p>
+  <div class="avatar-picks" id="avatarPicks">
+    <button type="button" data-avatar="😎">😎</button><button type="button" data-avatar="🦊">🦊</button><button type="button" data-avatar="🐼">🐼</button><button type="button" data-avatar="🐸">🐸</button><button type="button" data-avatar="🦄">🦄</button><button type="button" data-avatar="🐯">🐯</button>
+  </div>
+  <div class="reward-card"><p>🏆 Best score: <strong id="profileBest">0</strong></p><p>🔓 Highest level: <strong id="profileLevel">1</strong></p><p>🪙 Coins: <strong id="profileCoins">0</strong></p></div>
+  <button class="home-button" id="saveProfileButton">💾 SAVE PROFILE</button>
+  <button class="home-button" id="profileBackButton">⬅ BACK</button>
+</section>
+
+<section id="leaderboardScreen" class="screen">
+  <h2>🏆 Leaderboard</h2>
+  <p class="small-text">Top scores recorded on this device.</p>
+  <div id="leaderboardList" class="reward-card"></div>
+  <p class="small-text">This is a local leaderboard. An online global leaderboard requires a secure server/database.</p>
+  <button class="home-button" id="leaderboardBackButton">⬅ BACK</button>
+</section>
+
 <section id="gameScreen">
   <div class="panel">
     <div class="stats">
@@ -221,7 +266,7 @@ h1 { font-size: 32px; margin: 5px 0; text-shadow: 0 4px 0 #59108c, 0 7px 12px #2
     </div>
   </div>
 </section>
-
+  
 <div id="overlay">
   <div class="popup">
     <h2 id="popupTitle">🎉 Level Complete!</h2>
@@ -243,8 +288,9 @@ let busy = false, gameOver = false;
 let soundOn = true, musicOn = true;
 let coins = 0, dailyStreak = 0, lastRewardDate = "", lastSpinDate = "";
 let inventory = { extraMoves: 0, bombs: 0, rainbows: 0 };
+let playerName = "Candy Master", playerAvatar = "😎", leaderboard = [];
 let audioContext = null, musicTimer = null, musicNote = 0;
- 
+
 const board = document.getElementById("board");
 const message = document.getElementById("message");
 const overlay = document.getElementById("overlay");
@@ -377,31 +423,38 @@ function loadProgress() {
       bombs: Math.max(0, Number(saved.inventory.bombs) || 0),
       rainbows: Math.max(0, Number(saved.inventory.rainbows) || 0)
     } : { extraMoves: 0, bombs: 0, rainbows: 0 };
+    playerName = typeof saved.playerName === "string" && saved.playerName.trim() ? saved.playerName.slice(0,18) : "Candy Master";
+    playerAvatar = typeof saved.playerAvatar === "string" ? saved.playerAvatar : "😎";
+    leaderboard = Array.isArray(saved.leaderboard) ? saved.leaderboard.filter(x => x && Number.isFinite(x.score)).slice(0,10) : [];
     level = highestLevel;
   } catch (error) {
     lives = 5; bestScore = 0; highestLevel = 1; level = 1;
   }
   updateHome();
 }
-
+  
 function saveProgress() {
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       lives: lives, bestScore: bestScore, highestLevel: highestLevel,
     coins: coins, dailyStreak: dailyStreak, lastRewardDate: lastRewardDate, lastSpinDate: lastSpinDate,
-    inventory: inventory
+    inventory: inventory, playerName: playerName, playerAvatar: playerAvatar, leaderboard: leaderboard
     }));
   } catch (error) {
     console.log("Saving progress unavailable in this preview.");
   }
   updateHome();
-  }
-  
+}
+
 function updateHome() {
   document.getElementById("homeLives").textContent = lives;
   document.getElementById("homeBest").textContent = bestScore;
   document.getElementById("homeLevel").textContent = highestLevel;
   document.getElementById("homeCoins").textContent = coins;
+  const nameNode = document.getElementById("homePlayerName");
+  if (nameNode) nameNode.textContent = playerName;
+  const lineNode = document.getElementById("homePlayerLine");
+  if (lineNode) lineNode.textContent = playerAvatar + " Your candy adventure starts here.";
 }
 
 function showScreen(name) {
@@ -411,6 +464,8 @@ function showScreen(name) {
   document.getElementById("dailyRewardsScreen").classList.remove("active");
   document.getElementById("shopScreen").classList.remove("active");
   document.getElementById("spinScreen").classList.remove("active");
+  document.getElementById("profileScreen").classList.remove("active");
+  document.getElementById("leaderboardScreen").classList.remove("active");
   document.getElementById("gameScreen").classList.remove("active");
   if (name === "home") {
     document.getElementById("homeScreen").classList.add("active");
@@ -434,12 +489,18 @@ function showScreen(name) {
     document.getElementById("dailyRewardsScreen").classList.add("active");
     stopMusic();
     renderDailyRewards();
+  } else if (name === "profile") {
+    document.getElementById("profileScreen").classList.add("active");
+    stopMusic(); renderProfile();
+  } else if (name === "leaderboard") {
+    document.getElementById("leaderboardScreen").classList.add("active");
+    stopMusic(); renderLeaderboard();
   } else {
     document.getElementById("gameScreen").classList.add("active");
     if (musicOn) startMusic();
   }
-}
-
+  }
+  
 function renderLevelSelection() {
   const grid = document.getElementById("levelGrid");
   grid.innerHTML = "";
@@ -539,8 +600,9 @@ function claimDailyReward() {
     "🎉 Collected " + reward.coins + " coins and " + reward.lives +
     " extra life" + (reward.lives === 1 ? "" : "s") + "!";
   playSound(880);
-  }
-  function randomCandy() {
+}
+
+function randomCandy() {
   return NORMAL[Math.floor(Math.random() * NORMAL.length)];
 }
 function targetScore() { return level * 300; }
@@ -610,7 +672,8 @@ function fallAndRefill() {
     while (remaining.length < SIZE) remaining.push(randomCandy());
     for (let row = SIZE - 1; row >= 0; row--) candies[row * SIZE + col] = remaining[SIZE - 1 - row];
   }
-}
+  }
+  
 
 function clearSet(indices) {
   if (indices.size === 0) return;
@@ -685,6 +748,9 @@ function showPopup(title, text, buttonText) {
 
 function finishLevel() {
   gameOver = true;
+  leaderboard.push({ name: playerName, avatar: playerAvatar, score: score, level: level, date: localDateKey() });
+  leaderboard.sort((a,b) => b.score - a.score);
+  leaderboard = leaderboard.slice(0,10);
   highestLevel = Math.min(100, Math.max(highestLevel, level === 100 ? 100 : level + 1));
   saveProgress();
   stopMusic();
@@ -792,9 +858,8 @@ function startLevel() {
   showScreen("game");
   message.textContent = "Match 3+ candies to reach your target!";
   updateStats(); render();
-}
-
-
+  }
+ 
 function renderShop() {
   document.getElementById("shopCoins").textContent = coins;
   document.getElementById("shopMessage").textContent =
@@ -875,6 +940,21 @@ function spinLuckyWheel() {
   }, 4100);
 }
 
+function renderProfile() {
+  document.getElementById("playerNameInput").value = playerName === "Candy Master" ? "" : playerName;
+  document.getElementById("profileAvatarPreview").textContent = playerAvatar;
+  document.getElementById("profileBest").textContent = bestScore;
+  document.getElementById("profileLevel").textContent = highestLevel;
+  document.getElementById("profileCoins").textContent = coins;
+  document.querySelectorAll("[data-avatar]").forEach(btn => btn.classList.toggle("chosen", btn.dataset.avatar === playerAvatar));
+}
+function renderLeaderboard() {
+  const box = document.getElementById("leaderboardList");
+  if (!leaderboard.length) { box.innerHTML = "No completed levels yet. Finish a level to appear here!"; return; }
+  box.innerHTML = leaderboard.map((entry,index) => `<div class="leader-row"><span>${index+1}. ${entry.avatar || "🍬"} ${escapeHtml(entry.name || "Player")}</span><span><strong>${entry.score}</strong><br><small>Level ${entry.level}</small></span></div>`).join("");
+}
+function escapeHtml(value) { return String(value).replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch])); }
+
 function startNewGame() {
   lives = 5; level = 1; highestLevel = Math.max(highestLevel, 1); score = 0;
   saveProgress(); startLevel();
@@ -905,13 +985,29 @@ document.querySelectorAll("[data-buy]").forEach(button => {
   button.addEventListener("click", () => buyShopItem(button.dataset.buy));
 });
 
+document.getElementById("profileButton").onclick = () => showScreen("profile");
+document.getElementById("leaderboardButton").onclick = () => showScreen("leaderboard");
+document.getElementById("profileBackButton").onclick = () => showScreen("home");
+document.getElementById("leaderboardBackButton").onclick = () => showScreen("home");
+document.querySelectorAll("[data-avatar]").forEach(btn => btn.addEventListener("click", () => {
+  playerAvatar = btn.dataset.avatar; renderProfile();
+}));
+document.getElementById("saveProfileButton").onclick = () => {
+  const typed = document.getElementById("playerNameInput").value.trim();
+  playerName = typed ? typed.slice(0,18) : "Candy Master";
+  saveProgress(); renderProfile();
+  document.getElementById("homePlayerName").textContent = playerName;
+  alert("Your player profile has been saved!");
+};
+
 document.getElementById("resetButton").onclick = function() {
   if (confirm("Reset your saved progress and start over?")) {
     try { localStorage.removeItem(SAVE_KEY); } catch (error) {}
     lives = 5; bestScore = 0; highestLevel = 1; level = 1;
     coins = 0; dailyStreak = 0; lastRewardDate = ""; lastSpinDate = "";
     inventory = { extraMoves: 0, bombs: 0, rainbows: 0 };
-    updateHome(); alert("Progress reset!");
+    playerName = "Candy Master"; playerAvatar = "😎"; leaderboard = [];
+    saveProgress(); updateHome(); alert("Progress reset!");
   }
 };
 
@@ -974,4 +1070,4 @@ if ("serviceWorker" in navigator) {
 }
 </script>
 </body>
-</html>
+</html> 
